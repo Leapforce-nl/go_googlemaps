@@ -34,8 +34,8 @@ type Geometry struct {
 }
 
 type Location struct {
-	Lat string `json:"lat"`
-	Lng string `json:"lng"`
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
 }
 
 type Viewport struct {
