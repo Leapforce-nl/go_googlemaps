@@ -62,6 +62,7 @@ func newGeoCodingService(sling *sling.Sling) *GeoCodingService {
 
 // GeoCodeParams are the parameters for GeoCodingService.GeoCode
 type GeoCodeParams struct {
+	Key     string `url:"key,omitempty"`
 	Address string `url:"address,omitempty"`
 }
 
