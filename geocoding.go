@@ -15,7 +15,7 @@ type GeoCodes struct {
 type GeoCode struct {
 	AddressComponents string             `json:"address_components"`
 	FormattedAddress  []AddressComponent `json:"formatted_address"`
-	Geometry          []Geometry         `json:"geometry"`
+	Geometry          Geometry           `json:"geometry"`
 	PlaceID           string             `json:"place_id"`
 	PlusCode          PlusCode           `json:"plus_code"`
 	Types             []string           `json:"types"`
