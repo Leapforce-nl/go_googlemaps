@@ -4,20 +4,17 @@ import (
 	"fmt"
 )
 
-// APIError represents a GoogleMaps API Error response
-type APIError struct {
-	ErrorMessage string        `json:"error_message"`
-	Results      []ErrorDetail `json:"results"`
-	Status       string        `json:"status"`
+// ErrorResponse represents a GoogleMaps API Error response
+type ErrorResponse struct {
+	ErrorMessage string `json:"error_message"`
+	Results      []struct {
+		Message string `json:"message"`
+		Code    int    `json:"code"`
+	} `json:"results"`
+	Status string `json:"status"`
 }
 
-// ErrorDetail represents an individual item in an APIError.
-type ErrorDetail struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
-}
-
-func (e APIError) Error() string {
+func (e ErrorResponse) Error() string {
 	if len(e.Results) > 0 {
 		err := e.Results[0]
 		return fmt.Sprintf("GoogleMaps: %d %v", err.Code, err.Message)
@@ -27,7 +24,7 @@ func (e APIError) Error() string {
 
 // Empty returns true if empty. Otherwise, at least 1 error message/code is
 // present and false is returned.
-func (e APIError) Empty() bool {
+func (e ErrorResponse) Empty() bool {
 	if len(e.Results) == 0 {
 		return true
 	}
@@ -37,7 +34,7 @@ func (e APIError) Empty() bool {
 // relevantError returns any non-nil http-related error (creating the request,
 // getting the response, decoding) if any. If the decoded apiError is non-zero
 // the apiError is returned. Otherwise, no errors occurred, returns nil.
-func relevantError(httpError error, apiError APIError) error {
+func relevantError(httpError error, apiError ErrorResponse) error {
 	if httpError != nil {
 		return httpError
 	}
