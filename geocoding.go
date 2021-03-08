@@ -1,7 +1,10 @@
 package googlemaps
 
 import (
-	"net/http"
+	"fmt"
+	"math"
+	"math/rand"
+	"time"
 
 	"github.com/dghubble/sling"
 	errortools "github.com/leapforce-libraries/go_errortools"
@@ -78,7 +81,7 @@ type GeoCodeParams struct {
 	Address string `url:"address,omitempty"`
 }
 
-func (s *GeoCodingService) GeoCode(params *GeoCodeParams) (*[]GeoCode, *http.Response, *errortools.Error) {
+func (s *GeoCodingService) GeoCode(params *GeoCodeParams) (*[]GeoCode, *errortools.Error) {
 
 	p := struct {
 		Key     string `url:"key,omitempty"`
@@ -90,9 +93,44 @@ func (s *GeoCodingService) GeoCode(params *GeoCodeParams) (*[]GeoCode, *http.Res
 
 	geoCodes := new(GeoCodes)
 	errorResponse := new(ErrorResponse)
-	resp, err := s.sling.New().Get("json").QueryStruct(p).Receive(geoCodes, errorResponse)
-	if err != nil {
-		return nil, resp, errortools.ErrorMessage(relevantError(err, *errorResponse))
+
+	retry := 0
+	maxRetries := 5
+
+	for retry <= maxRetries {
+		if retry > 0 {
+			fmt.Printf("Starting retry %v for GeoCode `%s`\n", retry, params.Address)
+			waitSeconds := math.Pow(2, float64(retry-1))
+			waitMilliseconds := int(rand.Float64() * 1000)
+			time.Sleep(time.Duration(waitSeconds)*time.Second + time.Duration(waitMilliseconds)*time.Millisecond)
+		}
+
+		response, err := s.sling.New().Get("json").QueryStruct(p).Receive(geoCodes, errorResponse)
+
+		statusCode := 0
+		if response != nil {
+			statusCode = response.StatusCode
+		}
+
+		if (statusCode == 500 || statusCode == 503) && retry < maxRetries { // retry in case of status 500/503 (server error)
+			retry++
+		} else {
+			if err == nil && (statusCode/100 == 4 || statusCode/100 == 5) {
+				err = fmt.Errorf("Server returned statuscode %v", statusCode)
+			}
+
+			if err != nil {
+				e := new(errortools.Error)
+				e.SetResponse(response)
+				e.SetMessage(err.Error())
+
+				return nil, e
+			}
+
+			return &geoCodes.Results, nil
+		}
 	}
-	return &geoCodes.Results, resp, nil
+
+	// should never reach this
+	return nil, nil
 }
